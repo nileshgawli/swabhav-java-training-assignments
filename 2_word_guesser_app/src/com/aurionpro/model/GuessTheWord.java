@@ -60,6 +60,7 @@ public class GuessTheWord {
 				break;
 			}
 		}
+		scanner.close();
 
 	}
 
