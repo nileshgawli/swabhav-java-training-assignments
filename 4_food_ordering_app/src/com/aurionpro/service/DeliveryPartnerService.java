@@ -65,13 +65,37 @@ public class DeliveryPartnerService {
 	}
 
 	public DeliveryPartner assignRandomDeliveryPartner() {
-		List<DeliveryPartner> availablePartners = deliveryPartners.stream()
-				.filter(DeliveryPartner::isAvailabilityStatus).collect(Collectors.toList());
-		if (availablePartners.isEmpty()) {
-			System.out.println("No delivery partners available for assignment.");
-			return null;
-		}
-		return availablePartners.get(random.nextInt(availablePartners.size()));
+	    List<DeliveryPartner> availablePartners = deliveryPartners.stream()
+	            .filter(DeliveryPartner::isAvailabilityStatus) 
+	            .collect(Collectors.toList());
+
+	    if (availablePartners.isEmpty()) {
+	        System.out.println("No delivery partners available for assignment.");
+	        return null;
+	    }
+
+	    DeliveryPartner assignedPartner = availablePartners.get(random.nextInt(availablePartners.size()));
+	    assignedPartner.setAvailabilityStatus(false); 
+	    saveDeliveryPartners(); 
+	    System.out.println("Delivery partner " + assignedPartner.getName() + " (ID: " + assignedPartner.getId() + ") assigned and status set to unavailable.");
+	    return assignedPartner;
+	}
+	
+	public boolean updateDeliveryPartnerStatus(int id, boolean newStatus) {
+	    Optional<DeliveryPartner> optionalPartner = deliveryPartners.stream().filter(dp -> dp.getId() == id).findFirst();
+	    if (optionalPartner.isPresent()) {
+	        DeliveryPartner partner = optionalPartner.get();
+	        if (partner.isAvailabilityStatus() != newStatus) { 
+	            partner.setAvailabilityStatus(newStatus);
+	            saveDeliveryPartners(); 
+	            System.out.println("Delivery partner ID " + id + " availability updated to: " + (newStatus ? "Available" : "Engaged"));
+	        } else {
+	            System.out.println("Delivery partner ID " + id + " is already " + (newStatus ? "Available" : "Engaged") + ".");
+	        }
+	        return true;
+	    }
+	    System.out.println("Error: Delivery partner with ID " + id + " not found.");
+	    return false;
 	}
 
 	// update delete delivery partner (futuer scope)

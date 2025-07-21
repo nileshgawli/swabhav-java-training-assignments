@@ -3,7 +3,7 @@ package com.aurionpro.service;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Optional;
 
 import com.aurionpro.model.Cart;
 import com.aurionpro.model.Customer;
@@ -114,7 +114,6 @@ public class OrderService {
 		System.out.println("-------------------------------------------------");
 		System.out.printf("Subtotal (before overall discount): ₹%.2f\n", order.getSubtotalAmount());
 		if (order.getOverallDiscountApplied() > 0) {
-			// Recalculate percentage for display if needed, or store it in Order model
 			double discountPercentage = (order.getOverallDiscountApplied() / order.getSubtotalAmount()) * 100;
 			System.out.printf("Overall Discount Applied          : ₹%.2f (%.2f%%)\n", order.getOverallDiscountApplied(),
 					discountPercentage);
@@ -130,5 +129,55 @@ public class OrderService {
 
 	public List<Order> getAllOrders() {
 		return new ArrayList<>(allOrders);
+	}
+	
+	public boolean updateOrderStatus(int orderId, String newStatus) {
+	    Optional<Order> optionalOrder = allOrders.stream().filter(o -> o.getOrderId() == orderId).findFirst();
+
+	    if (optionalOrder.isPresent()) {
+	        Order order = optionalOrder.get();
+
+	        if (order.getStatus().equalsIgnoreCase(newStatus)) {
+	            System.out.println("Order ID " + orderId + " is already in status: " + newStatus);
+	            return false;
+	        }
+
+	        if (newStatus.equalsIgnoreCase("DELIVERED") && order.getDeliveryPartner() != null) {
+
+	            boolean dpUpdated = deliveryPartnerService.updateDeliveryPartnerStatus(order.getDeliveryPartner().getId(), true);
+	            if (!dpUpdated) {
+	                System.err.println("Warning: Could not find or update delivery partner for order " + orderId);
+	            }
+	        } else if (newStatus.equalsIgnoreCase("CANCELLED") && order.getDeliveryPartner() != null) {
+	             boolean dpUpdated = deliveryPartnerService.updateDeliveryPartnerStatus(order.getDeliveryPartner().getId(), true);
+	             if (!dpUpdated) {
+	                System.err.println("Warning: Could not find or update delivery partner for cancelled order " + orderId);
+	             }
+	        }
+
+	        order.setStatus(newStatus); 
+	        saveAllOrders(); 
+
+	        Optional<Customer> optionalCustomer = customerService.getCustomerById(order.getCustomerId());
+	        if (optionalCustomer.isPresent()) {
+	            Customer customer = optionalCustomer.get();
+	            customer.getOrderHistory().stream()
+	                    .filter(o -> o.getOrderId() == orderId)
+	                    .findFirst()
+	                    .ifPresent(o -> o.setStatus(newStatus));
+	            customerService.saveCustomer(customer);
+	        } else {
+	            System.err.println("Warning: Customer for order " + orderId + " not found, cannot update customer's order history.");
+	        }
+
+	        System.out.println("Order ID " + orderId + " status updated to: " + newStatus);
+	        return true;
+	    }
+	    System.out.println("Error: Order with ID " + orderId + " not found.");
+	    return false;
+	}
+
+	public Optional<Order> getOrderById(int orderId) {
+	    return allOrders.stream().filter(o -> o.getOrderId() == orderId).findFirst();
 	}
 }

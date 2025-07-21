@@ -31,8 +31,9 @@ public class AdminUI {
 			System.out.println("1. Menu Management");
 			System.out.println("2. Discount Management");
 			System.out.println("3. Delivery Partner Management");
-			System.out.println("4. View All Orders (Global)");
-			System.out.println("5. Logout");
+			System.out.println("4. Order Management");
+			System.out.println("5. View All Orders (Global)");
+			System.out.println("6. Logout");
 			System.out.print("Enter your choice: ");
 
 			choice = InputUtil.getIntegerInput(scanner);
@@ -50,16 +51,19 @@ public class AdminUI {
 			case 3:
 				deliveryPartnerManagement();
 				break;
-			case 4:
-				viewAllOrders();
-				break;
-			case 5:
-				System.out.println("Logging out from Admin Dashboard.");
-				break;
-			default:
-				System.out.println("Invalid choice. Please try again.");
+			 case 4: 
+			        orderManagement();
+			        break;
+			    case 5: 
+			        viewAllOrders();
+			        break;
+			    case 6: 
+			        System.out.println("Logging out from Admin Dashboard.");
+			        break;
+			    default:
+			        System.out.println("Invalid choice. Please try again.");
 			}
-		} while (choice != 5);
+		} while (choice != 6);
 	}
 
 	private void menuManagement() {
@@ -304,5 +308,69 @@ public class AdminUI {
 				order.getCustomerId(), order.getOrderDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
 				order.getFinalTotalAmount(), order.getPaymentMode(), order.getStatus()));
 		System.out.println("-------------------------------------------------------------------------");
+	}
+	
+	private void orderManagement() {
+	    int choice;
+	    do {
+	        System.out.println("\n--- Order Management ---");
+	        System.out.println("1. View All Orders"); 
+	        System.out.println("2. Update Order Status");
+	        System.out.println("3. Back to Admin Menu");
+	        System.out.print("Enter your choice: ");
+
+	        choice = InputUtil.getIntegerInput(scanner);
+	        if (choice == -1) { continue; }
+
+	        switch (choice) {
+	            case 1: viewAllOrders(); break;
+	            case 2: updateOrderStatusAdmin(); break;
+	            case 3: System.out.println("Exiting Order Management."); break;
+	            default: System.out.println("Invalid choice. Please try again.");
+	        }
+	    } while (choice != 3);
+	}
+
+	
+	private void updateOrderStatusAdmin() {
+	    System.out.println("\n--- Update Order Status ---");
+	    viewAllOrders(); 
+	    if (OrderService.getInstance().getAllOrders().isEmpty()) {
+	        return;
+	    }
+
+	    System.out.print("Enter Order ID to update: ");
+	    int orderId = InputUtil.getIntegerInput(scanner);
+	    if (orderId == -1) { return; }
+
+	    Optional<Order> orderOptional = OrderService.getInstance().getOrderById(orderId);
+	    if (orderOptional.isEmpty()) {
+	        System.out.println("Order with ID " + orderId + " not found.");
+	        return;
+	    }
+
+	    Order order = orderOptional.get();
+	    System.out.println("Current status for Order ID " + orderId + ": " + order.getStatus());
+	    System.out.println("Select New Status:");
+	    System.out.println("1. ACCEPTED");
+	    System.out.println("2. PREPARING");
+	    System.out.println("3. OUT_FOR_DELIVERY");
+	    System.out.println("4. DELIVERED");
+	    System.out.println("5. CANCELLED");
+	    System.out.print("Enter choice: ");
+	    int statusChoice = InputUtil.getIntegerInput(scanner);
+	    if (statusChoice == -1) { return; }
+
+	    String newStatus = null;
+	    switch (statusChoice) {
+	        case 1: newStatus = "ACCEPTED"; break;
+	        case 2: newStatus = "PREPARING"; break;
+	        case 3: newStatus = "OUT_FOR_DELIVERY"; break;
+	        case 4: newStatus = "DELIVERED"; break;
+	        case 5: newStatus = "CANCELLED"; break;
+	        default: System.out.println("Invalid status choice."); return;
+	    }
+
+	    OrderService.getInstance().updateOrderStatus(orderId, newStatus);
 	}
 }
