@@ -12,6 +12,7 @@ bin/
 *.tmp
 *.swp
 *.bak
+.sonarlint/
 
 # OS-specific junk
 .DS_Store
